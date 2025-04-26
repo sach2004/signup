@@ -1,71 +1,59 @@
-import NextAuth, { AuthOptions } from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+}
 
-const authOptions: AuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials) {
-          throw new Error("Missing credentials");
-        }
+const SignUpPage = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
 
-        const { email, password } = credentials;
+  const router = useRouter();
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const prisma = new PrismaClient();
+      const user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          password: await bcrypt.hash(password, 10),
+        },
+      });
+      router.push('/api/auth/signin');
+    } catch (error) {
+      setError(error.message);
+    }
+  };
 
-        if (!user) {
-          throw new Error("No user found with this email");
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordValid) {
-          throw new Error("Invalid credentials");
-        }
-
-        return { id: user.id.toString(), name: user.name, email: user.email };
-      },
-    }),
-  ],
-  pages: {
-    signIn: "/auth/signin",
-    signOut: "/auth/signout",
-    error: "/auth/error",
-    verifyRequest: "/auth/verify-request",
-  },
-  session: {
-    strategy: "jwt",
-  },
-  callbacks: {
-    jwt({ token, user }: any) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-      }
-      return token;
-    },
-    session({ session, token }: any) {
-      if (token) {
-        session.user = {
-          id: token.id,
-        };
-      }
-      return session;
-    },
-  },
+  return (
+    <div>
+      <h1>Sign Up</h1>
+      <form onSubmit={handleSubmit}>
+        <label>
+          Name:
+          <input type="text" value={name} onChange={(event) => setName(event.target.value)} />
+        </label>
+        <label>
+          Email:
+          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label>
+          Password:
+          <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+        <button type="submit">Sign Up</button>
+      </form>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+    </div>
+  );
 };
 
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+export default SignUpPage;
