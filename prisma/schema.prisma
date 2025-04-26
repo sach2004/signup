@@ -1,19 +1,14 @@
-
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-
-
-
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String 
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  try {
+    const result = await signIn('credentials', {
+      redirect: false,
+      email: formData.email,
+      password: formData.password
+    });
+    if (result.error) {
+      setError(result.error);
+    }
+  } catch (err) {
+    setError('An error occurred during sign in');
+  }
 }
