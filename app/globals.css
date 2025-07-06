@@ -1,9 +1,33 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-
-body {
-
-  font-family: Arial, Helvetica, sans-serif;
+interface LoginFormProps {
+  onLogin: (email: string, password: string) => void;
 }
+
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const router = useRouter();
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    onLogin(email, password);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <label>
+        Email:
+        <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+      </label>
+      <label>
+        Password:
+        <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+      </label>
+      <button type="submit">Login</button>
+    </form>
+  );
+};
+
+export default LoginForm;
